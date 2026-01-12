@@ -1,5 +1,0 @@
-include_directories(
-        src/App
-        src/HAL
-        lib
-)

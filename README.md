@@ -1,12 +1,12 @@
 ## 说明
 
-![](5.Docs/2.Images/peak.jpg)
+![](5.Docs/2.Images/peak.png)
 
 > 本项目是一个超迷你的智能小终端，集成LVGL图像框架、MVC框架、消息框架、WiFi蓝牙能力，未来会加入触摸屏支持。可以作为智能控制器用于实现很多应用。
 >
 > 另外我正在上面实现一个非常小型的3D引擎，可以用于动态显示一些3D模型（就像Dummy示教器中展示的那样）。
 
-非常感谢 https://github.com/FASTSHIFT 开源的X-Track项目，本文是对于X-Track硬件和固件往ESP32平台移植的记录说明。
+非常感谢 https://github.com/peng-zhihui/Peak 开源Peak项目 和 https://github.com/FASTSHIFT 开源的X-Track项目，本文是对于Peak硬件和新版本固件往ESP32平台移植的记录说明。
 
 ## 1. 硬件移植
 
@@ -138,6 +138,7 @@ X-TRACK 使用 LVGL 作为图形库，提供用户显示界面，并使用了许
 
 ## 参考链接 
 
+* [Peak](https://github.com/peng-zhihui/Peak)
 * [LVGL](https://github.com/lvgl/lvgl)
 * [Bing Maps Tile System](https://docs.microsoft.com/en-us/bingmaps/articles/bing-maps-tile-system?redirectedfrom=MSDN)
 * [IOS ViewController](https://developer.apple.com/documentation/uikit/uiviewcontroller)
