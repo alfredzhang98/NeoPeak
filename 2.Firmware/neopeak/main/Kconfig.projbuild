@@ -1,0 +1,241 @@
+menu "NeoBoard"
+    choice MCU_VARIANT
+        prompt "主控 MCU 型号"
+        default MCU_VARIANT_PICO_V3_02_ES
+
+        config MCU_VARIANT_PICO_V3_02_ES
+            bool "ESP32-PICO-V3-02-ES (8 MB Flash, 2 MB PSRAM)"
+
+        config MCU_VARIANT_PICO_V3
+            bool "ESP32-PICO-V3 (4 MB Flash, 无 PSRAM)"
+    endchoice
+
+    config MCU_FLASH_SIZE_MB
+        int "Flash 大小 (MB)"
+        default 8 if MCU_VARIANT_PICO_V3_02_ES
+        default 4 if MCU_VARIANT_PICO_V3
+
+    config MCU_PSRAM_SIZE_MB
+        int "PSRAM 大小 (MB)"
+        default 2 if MCU_VARIANT_PICO_V3_02_ES
+        default 0 if MCU_VARIANT_PICO_V3
+
+    if MCU_VARIANT_PICO_V3_02_ES
+        comment "主控 CPU：ESP32-PICO-V3-02-ES"
+        comment "存储：8 MB Flash，2 MB PSRAM"
+    endif
+
+    if MCU_VARIANT_PICO_V3
+        comment "主控 CPU：ESP32-PICO-V3"
+        comment "存储：4 MB Flash，无 PSRAM"
+    endif
+
+    comment "GPIO 设为 -1 表示未连接"
+
+    menu "LCD"
+        config SCREEN_CS_PIN
+            int "LCD CS GPIO"
+            default -1
+            help
+                -1 表示未连接。
+
+        config SCREEN_DC_PIN
+            int "LCD DC GPIO"
+            default 2
+
+        config SCREEN_RST_PIN
+            int "LCD RST GPIO"
+            default 4
+
+        config SCREEN_SCK_PIN
+            int "LCD SCK GPIO"
+            default 7
+
+        config SCREEN_MOSI_PIN
+            int "LCD MOSI GPIO"
+            default 8
+
+        config SCREEN_MISO_PIN
+            int "LCD MISO GPIO"
+            default -1
+            help
+                -1 表示未连接。
+
+        config SCREEN_BLK_PIN
+            int "LCD BLK GPIO"
+            default 12
+
+        config SCREEN_HOR_RES
+            int "LCD horizontal resolution"
+            default 240
+
+        config SCREEN_VER_RES
+            int "LCD vertical resolution"
+            default 240
+
+        config SCREEN_BUFFER_SIZE
+            int "LCD buffer size"
+            default 28800
+            help
+                Buffer size in pixels (HOR_RES * VER_RES / 2). Default for 240x240 is 28800.
+    endmenu
+
+    menu "Battery"
+        config BAT_DET_PIN
+            int "Battery detect GPIO"
+            default 37
+
+        config BAT_CHG_DET_PIN
+            int "Battery charge detect GPIO"
+            default 38
+    endmenu
+
+    menu "Buzzer"
+        config BUZZ_PIN
+            int "Buzzer GPIO"
+            default 25
+
+        config BUZZ_CHANNEL
+            int "Buzzer PWM channel"
+            default 2
+
+        config SOUND_ENABLE_DEFAULT
+            bool "Sound enabled by default"
+            default y
+    endmenu
+
+    menu "Motor"
+        config MOTOR_PIN
+            int "Motor GPIO"
+            default 19
+    endmenu
+
+    menu "IMU"
+        config IMU_INT1_PIN
+            int "IMU INT1 GPIO"
+            default 5
+            help
+                内部 IMU 的 INT1 已连接到 GPIO5；GPIO5 同时也是对外引出的引脚之一，
+                外部使用时请避免与 IMU 中断产生冲突。
+
+        config IMU_INT2_PIN
+            int "IMU INT2 GPIO"
+            default -1
+            help
+                -1 表示未连接。
+
+        config IMU_I2C_ADDR
+            hex "IMU I2C address"
+            default 0x68
+
+        config IMU_I2C_TOOL
+            bool "Run IMU I2C probe tool at boot"
+            default n
+            help
+                Enable a standalone I2C probe and WHO_AM_I read at boot.
+
+        config IMU_I2C_TOOL_ONLY
+            bool "Only run IMU I2C tool (skip app init)"
+            default y
+            depends on IMU_I2C_TOOL
+
+        config IMU_I2C_TOOL_HZ
+            int "IMU I2C tool clock (Hz)"
+            default 400000
+            depends on IMU_I2C_TOOL
+    endmenu
+
+    menu "External FPC 6-Pin"
+        comment "对外 FPC 6Pin：6 脚 VCC(3V3)，1 脚 GND，其余为 GPIO5/32/33/20"
+        config MCU_SDA_PIN
+            int "MCU I2C SDA GPIO"
+            default 32
+            help
+                对外 I2C 的 SDA 引脚（FPC 6Pin 之一）。注意 GPIO5 已连接内部 IMU INT1，
+                外部使用时请避免冲突。
+
+        config MCU_SCL_PIN
+            int "MCU I2C SCL GPIO"
+            default 33
+            help
+                对外 I2C 的 SCL 引脚（FPC 6Pin 之一）。
+
+        config MCU_EXT_GENERAL_GPIO
+            int "External general GPIO (GPIO20)"
+            default 20
+            help
+                对外通用 GPIO（FPC 6Pin 之一），默认连接 GPIO20。
+
+        config MCU_EXT_GPIO5
+            int "External GPIO5"
+            default 5
+            help
+                对外 GPIO5（FPC 6Pin 之一）。注意 GPIO5 已连接内部 IMU INT1，
+                外部使用时请避免冲突。
+    endmenu
+
+    menu "Encoder"
+        config ENCODER_B_PIN
+            int "Encoder B GPIO"
+            default 35
+
+        config ENCODER_A_PIN
+            int "Encoder A GPIO"
+            default 34
+
+        config ENCODER_PUSH_PIN
+            int "Encoder select button GPIO"
+            default 27
+    endmenu
+
+    menu "Power"
+        config POWER_EN_PIN
+            int "Power enable GPIO"
+            default 21
+
+        config POWER_BUTTON_ACTIVE_LOW
+            bool "Power button active low"
+            default y
+
+        config POWER_ON_LONG_PRESS_MS
+            int "Power-on long press time (ms)"
+            default 1000
+
+        config POWER_OFF_LONG_PRESS_MS
+            int "Power-off long press time (ms)"
+            default 3000
+    endmenu
+
+    menu "SD Card"
+        config SD_SPI
+            string "SD SPI host"
+            default "SPI_SD"
+
+        config SD_CD_PIN
+            int "SD card CD GPIO"
+            default -1
+            help
+                -1 表示未连接。
+
+        config SD_MOSI_PIN
+            int "SD MOSI GPIO"
+            default 13
+
+        config SD_MISO_PIN
+            int "SD MISO GPIO"
+            default 26
+
+        config SD_SCK_PIN
+            int "SD SCK GPIO"
+            default 14
+
+        config SD_CS_PIN
+            int "SD CS GPIO"
+            default 15
+
+        config SD_DET_PIN
+            int "SD detect GPIO"
+            default 22
+    endmenu
+
+endmenu
