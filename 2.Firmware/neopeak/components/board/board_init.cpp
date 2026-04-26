@@ -6,7 +6,7 @@
 
 #include "buzzer.hpp"
 #include "encoder_service.h"
-#include "imu_service.h"
+#include "feedback_service.h"
 #include "message_bus.h"
 #include "motor.h"
 #include "power_service.h"
@@ -29,10 +29,8 @@ void board_init(void)
 {
     log_psram_size("boot");
 
-    // 消息总线：统一事件分发（IMU/显示/电源等服务共用）
     message_bus_init();
 
-    // 蜂鸣器硬件初始化，供提示音服务使用
     const buzzer_config_t buzzer_cfg = {
         .gpio_num = CONFIG_BUZZ_PIN,
         .speed_mode = LEDC_LOW_SPEED_MODE,
@@ -44,7 +42,6 @@ void board_init(void)
     };
     buzzer_init(&buzzer_cfg);
 
-    // 震动马达硬件初始化，供电源/提示反馈使用
     const motor_pwm_config_t motor_cfg = {
         .gpio_num = CONFIG_MOTOR_PIN,
         .speed_mode = LEDC_LOW_SPEED_MODE,
@@ -55,8 +52,6 @@ void board_init(void)
     };
     pwm_motor_init(&motor_cfg);
 
-    // 电源服务：按键/开关机/提示音/震动策略
-    // 编码器服务：轮询 A/B + 按键并发布事件
     const encoder_service_config_t enc_cfg = {
         .pin_a = CONFIG_ENCODER_A_PIN,
         .pin_b = CONFIG_ENCODER_B_PIN,
@@ -67,23 +62,14 @@ void board_init(void)
     };
     encoder_service_start(&enc_cfg);
 
+    feedback_service_start();
+
     const power_service_config_t power_cfg = {
         .io = {
             .power_en_pin = CONFIG_POWER_EN_PIN,
             .charge_det_pin = CONFIG_BAT_CHG_DET_PIN,
         },
-        .power_on_long_press_ms = CONFIG_POWER_ON_LONG_PRESS_MS,
         .power_off_long_press_ms = CONFIG_POWER_OFF_LONG_PRESS_MS,
     };
     power_service_start(&power_cfg);
-
-    // IMU 采样服务：周期采集并发布 IMU 原始数据
-    const imu_service_config_t imu_cfg = {
-        .port = I2C_NUM_0,
-        .sda_gpio = (gpio_num_t)CONFIG_MCU_SDA_PIN,
-        .scl_gpio = (gpio_num_t)CONFIG_MCU_SCL_PIN,
-        .i2c_hz = 400000,
-        .addr = CONFIG_IMU_I2C_ADDR,
-    };
-    imu_service_start(&imu_cfg);
 }

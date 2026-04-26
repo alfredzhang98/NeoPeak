@@ -4,5 +4,5 @@ idf_component_register(
          "hal_i2c.cpp"
          "hal_pwm.cpp"
     INCLUDE_DIRS "."
-    REQUIRES driver
+    REQUIRES esp_driver_gpio esp_driver_i2c esp_driver_ledc
 )

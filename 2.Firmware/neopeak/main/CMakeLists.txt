@@ -1,4 +1,3 @@
 idf_component_register(SRCS "main.c"
-                            "imu_i2c_tool.c"
-                       PRIV_REQUIRES board
+                       PRIV_REQUIRES board hal_board
                        INCLUDE_DIRS "")

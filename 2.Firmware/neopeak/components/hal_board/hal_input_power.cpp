@@ -28,7 +28,7 @@ esp_err_t hal_input_power_init(const hal_input_power_config_t *cfg)
         .intr_type = GPIO_INTR_DISABLE,
     };
     gpio_config(&power_cfg);
-    gpio_set_level((gpio_num_t)s_power_en_pin, 0);
+    gpio_set_level((gpio_num_t)s_power_en_pin, 1); // 立即锁存，防止电池供电时掉电
 
     // 充电检测：输入
     gpio_config_t chg_cfg = {

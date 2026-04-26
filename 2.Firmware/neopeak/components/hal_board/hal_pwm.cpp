@@ -27,17 +27,23 @@ esp_err_t hal_pwm_channel_init(const hal_pwm_channel_cfg_t *cfg)
     }
 
     // PWM 通道配置
+    // intr_type is deprecated in ESP-IDF v6.0 but still required to satisfy
+    // -Werror=missing-field-initializers; suppress the deprecation warning locally.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     ledc_channel_config_t ch_cfg = {
-        .gpio_num = cfg->gpio_num,
-        .speed_mode = cfg->speed_mode,
-        .channel = cfg->channel,
-        .intr_type = LEDC_INTR_DISABLE,
-        .timer_sel = cfg->timer_sel,
-        .duty = cfg->duty,
-        .hpoint = cfg->hpoint,
-        .sleep_mode = LEDC_SLEEP_MODE_NO_ALIVE_NO_PD,
-        .flags = { .output_invert = 0 },
+        .gpio_num    = cfg->gpio_num,
+        .speed_mode  = cfg->speed_mode,
+        .channel     = cfg->channel,
+        .intr_type   = LEDC_INTR_DISABLE,
+        .timer_sel   = cfg->timer_sel,
+        .duty        = cfg->duty,
+        .hpoint      = cfg->hpoint,
+        .sleep_mode  = LEDC_SLEEP_MODE_NO_ALIVE_NO_PD,
+        .flags       = { .output_invert = 0 },
+        .deconfigure = false,
     };
+#pragma GCC diagnostic pop
 
     return ledc_channel_config(&ch_cfg);
 }

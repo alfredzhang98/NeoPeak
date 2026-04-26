@@ -4,7 +4,7 @@
     "interface/ftdi/esp32_devkitj_v1.cfg",
     "target/esp32.cfg"
   ],
-  "idf.currentSetup": "D:\\SDKs\\idf\\.espressif\\v5.5.2\\esp-idf",
+  "idf.currentSetup": "/Users/alfred/.espressif/v6.0/esp-idf",
   "idf.customExtraVars": {
     "OPENOCD_SCRIPTS": "C:\\Users\\uceeqz4\\.espressif\\tools\\openocd-esp32\\v0.10.0-esp32-20190708/openocd-esp32/share/openocd/scripts",
     "IDF_TARGET": "esp32"
@@ -16,5 +16,6 @@
     "--compile-commands-dir=c:\\Users\\alfred\\Desktop\\Peak-main\\2.Firmware\\neopeak_idf\\build"
   ],
   "idf.portWin": "COM8",
-  "idf.flashType": "UART"
+  "idf.flashType": "UART",
+  "idf.port": "/dev/tty.usbserial-0001"
 }

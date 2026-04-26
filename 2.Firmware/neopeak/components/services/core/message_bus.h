@@ -10,9 +10,8 @@ extern "C" {
 #endif
 
 typedef enum {
-    MSG_TOPIC_IMU_RAW = 1,
-    MSG_TOPIC_IMU_QUAT = 2,
-    MSG_TOPIC_ENCODER = 3,
+    MSG_TOPIC_ENCODER  = 1,
+    MSG_TOPIC_FEEDBACK = 2,
 } message_topic_t;
 
 typedef struct {

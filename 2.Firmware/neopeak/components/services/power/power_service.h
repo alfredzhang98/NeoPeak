@@ -9,9 +9,8 @@ extern "C" {
 #endif
 
 typedef struct {
-	hal_input_power_config_t io;
-	uint32_t power_on_long_press_ms;
-	uint32_t power_off_long_press_ms;
+    hal_input_power_config_t io;
+    uint32_t power_off_long_press_ms;
 } power_service_config_t;
 
 /**

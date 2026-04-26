@@ -20,7 +20,7 @@ esp_err_t hal_i2c_master_bus_init(hal_i2c_bus_t *bus,
         .clk_source = I2C_CLK_SRC_DEFAULT,
         .glitch_ignore_cnt = 7,
         .intr_priority = 0,
-        .trans_queue_depth = 4,
+        .trans_queue_depth = 0,
         .flags = {
             .enable_internal_pullup = 1,
             .allow_pd = 0,
