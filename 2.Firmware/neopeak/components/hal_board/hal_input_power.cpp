@@ -19,7 +19,7 @@ esp_err_t hal_input_power_init(const hal_input_power_config_t *cfg)
     s_power_en_pin = cfg->power_en_pin;
     s_charge_pin = cfg->charge_det_pin;
 
-    // 电源使能脚：输出，默认拉低
+    // Power enable output.
     gpio_config_t power_cfg = {
         .pin_bit_mask = 1ULL << s_power_en_pin,
         .mode = GPIO_MODE_OUTPUT,
@@ -28,9 +28,9 @@ esp_err_t hal_input_power_init(const hal_input_power_config_t *cfg)
         .intr_type = GPIO_INTR_DISABLE,
     };
     gpio_config(&power_cfg);
-    gpio_set_level((gpio_num_t)s_power_en_pin, 1); // 立即锁存，防止电池供电时掉电
+    gpio_set_level((gpio_num_t)s_power_en_pin, 1); // Latch power immediately on battery.
 
-    // 充电检测：输入
+    // Charge detect input.
     gpio_config_t chg_cfg = {
         .pin_bit_mask = 1ULL << s_charge_pin,
         .mode = GPIO_MODE_INPUT,

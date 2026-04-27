@@ -25,6 +25,23 @@ struct FeedbackItem {
 QueueHandle_t     s_queue   = nullptr;
 TaskHandle_t      s_task    = nullptr;
 bool              s_started = false;
+uint8_t           s_haptic_percent = 60;
+
+motor_intensity_t scale_haptic_intensity(int base)
+{
+    if (s_haptic_percent == 0) {
+        return MOTOR_INTENSITY_1;
+    }
+
+    int scaled = (base * (int)s_haptic_percent + 99) / 100;
+    if (scaled < 1) {
+        scaled = 1;
+    }
+    if (scaled > 10) {
+        scaled = 10;
+    }
+    return (motor_intensity_t)scaled;
+}
 
 void tone_callback(uint32_t freq_hz, uint16_t volume)
 {
@@ -34,10 +51,14 @@ void tone_callback(uint32_t freq_hz, uint16_t volume)
 
 void do_haptic(feedback_haptic_t haptic)
 {
+    if (s_haptic_percent == 0) {
+        return;
+    }
+
     switch (haptic) {
-    case FEEDBACK_HAPTIC_LIGHT:  pwm_motor_shake(300, MOTOR_INTENSITY_3); break;
-    case FEEDBACK_HAPTIC_MEDIUM: pwm_motor_shake(400, MOTOR_INTENSITY_3); break;
-    case FEEDBACK_HAPTIC_STRONG: pwm_motor_shake(500, MOTOR_INTENSITY_5); break;
+    case FEEDBACK_HAPTIC_LIGHT:  pwm_motor_shake(300, scale_haptic_intensity(3)); break;
+    case FEEDBACK_HAPTIC_MEDIUM: pwm_motor_shake(400, scale_haptic_intensity(5)); break;
+    case FEEDBACK_HAPTIC_STRONG: pwm_motor_shake(500, scale_haptic_intensity(8)); break;
     default: break;
     }
 }
@@ -140,4 +161,20 @@ void feedback_post_blocking(feedback_music_t music, feedback_haptic_t haptic)
     }
 
     vSemaphoreDelete(sem);
+}
+
+void feedback_service_set_volume_percent(uint8_t percent)
+{
+    if (percent > 100) {
+        percent = 100;
+    }
+    buzzer_set_volume_percent(percent);
+}
+
+void feedback_service_set_haptic_percent(uint8_t percent)
+{
+    if (percent > 100) {
+        percent = 100;
+    }
+    s_haptic_percent = percent;
 }

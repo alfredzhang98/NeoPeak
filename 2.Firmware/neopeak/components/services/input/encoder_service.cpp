@@ -73,7 +73,16 @@ void encoder_task(void *arg)
             int idx = (s_last_state << 2) | state;
             int8_t delta = kDeltaTable[idx & 0x0F];
             if (delta != 0) {
-                publish_rotate(delta);
+                static int8_t s_accum = 0;
+                s_accum += delta;
+                while (s_accum >= 4) {
+                    publish_rotate(1);
+                    s_accum -= 4;
+                }
+                while (s_accum <= -4) {
+                    publish_rotate(-1);
+                    s_accum += 4;
+                }
             }
             s_last_state = state;
         }
@@ -131,4 +140,13 @@ esp_err_t encoder_service_start(const encoder_service_config_t *cfg)
     s_started = true;
     xTaskCreate(encoder_task, "encoder_service", 3072, NULL, 5, &s_task);
     return ESP_OK;
+}
+
+bool encoder_service_is_button_pressed(void)
+{
+    int level = hal_encoder_get_button_level();
+    if (level < 0) {
+        return false;
+    }
+    return s_button_active_low ? (level == 0) : (level != 0);
 }

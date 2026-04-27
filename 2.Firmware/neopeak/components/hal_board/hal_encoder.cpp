@@ -23,7 +23,7 @@ esp_err_t hal_encoder_init(const hal_encoder_config_t *cfg)
     s_pin_button = cfg->pin_button;
     s_button_active_low = cfg->button_active_low;
 
-    // 编码器 A/B 相输入
+    // Encoder A/B phase inputs.
     gpio_config_t encoder_cfg = {
         .pin_bit_mask = (1ULL << s_pin_a) | (1ULL << s_pin_b),
         .mode = GPIO_MODE_INPUT,
@@ -33,7 +33,7 @@ esp_err_t hal_encoder_init(const hal_encoder_config_t *cfg)
     };
     gpio_config(&encoder_cfg);
 
-    // 编码器按键输入，上拉/下拉按有效电平设置
+    // Encoder button input. Pull direction follows the active level.
     gpio_config_t button_cfg = {
         .pin_bit_mask = 1ULL << s_pin_button,
         .mode = GPIO_MODE_INPUT,

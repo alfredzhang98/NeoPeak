@@ -5,6 +5,7 @@
 #include "freertos/queue.h"
 #include "freertos/task.h"
 
+#include "display_service.h"
 #include "hal_input_power.h"
 #include "encoder_service.h"
 #include "feedback_service.h"
@@ -19,6 +20,8 @@ TickType_t    s_off_press_ticks = 0;
 QueueHandle_t s_evt_queue       = nullptr;
 bool          s_button_pressed  = false;
 TickType_t    s_press_start     = 0;
+bool          s_shutdown_armed = false;
+bool          s_wait_release_after_startup = false;
 
 void on_encoder_event(const message_t *msg, void *user_ctx)
 {
@@ -56,18 +59,24 @@ void power_task(void *arg)
         while (s_evt_queue != nullptr && xQueueReceive(s_evt_queue, &evt, 0) == pdTRUE) {
             if (evt.type == ENCODER_EVENT_BUTTON) {
                 s_button_pressed = evt.pressed;
-                s_press_start    = s_button_pressed ? xTaskGetTickCount() : 0;
+                if (!s_button_pressed) {
+                    s_press_start = 0;
+                    s_shutdown_armed = true;
+                    s_wait_release_after_startup = false;
+                } else if (s_shutdown_armed && !s_wait_release_after_startup) {
+                    s_press_start = xTaskGetTickCount();
+                }
             }
         }
 
         int chg_level = hal_input_power_get_charge_level();
         if (chg_level >= 0) {
             if (chg_level != pending_charge_level) {
-                // Level changed — restart debounce timer
+                // Level changed: restart debounce timer.
                 pending_charge_level = chg_level;
                 charge_change_at     = xTaskGetTickCount();
             } else if (pending_charge_level != last_charge_level) {
-                // Level stable — fire only after debounce window elapses
+                // Level stable: fire only after debounce window elapses.
                 if ((xTaskGetTickCount() - charge_change_at) >= pdMS_TO_TICKS(kChargeDebounceMs)) {
                     last_charge_level = pending_charge_level;
                     if (last_charge_level == 0) {
@@ -79,13 +88,18 @@ void power_task(void *arg)
             }
         }
 
-        if (s_button_pressed && s_press_start != 0) {
+        if (s_shutdown_armed && s_button_pressed && s_press_start != 0) {
             TickType_t elapsed = xTaskGetTickCount() - s_press_start;
             if (elapsed >= s_off_press_ticks) {
                 ESP_LOGI(kTag, "shutdown");
+                // Blank the screen first so the user gets immediate visual
+                // confirmation; the shutdown jingle still plays from the
+                // buzzer afterwards even though the panel is dark.
+                display_service_blank();
                 feedback_post_blocking(FEEDBACK_MUSIC_SHUTDOWN, FEEDBACK_HAPTIC_STRONG);
                 hal_input_power_set_enable(false);
                 s_press_start = 0;
+                s_shutdown_armed = false;
             }
         }
 
@@ -110,6 +124,13 @@ esp_err_t power_service_start(const power_service_config_t *cfg)
     }
 
     s_off_press_ticks = pdMS_TO_TICKS(cfg->power_off_long_press_ms);
+    s_button_pressed = encoder_service_is_button_pressed();
+    s_wait_release_after_startup = s_button_pressed;
+    s_shutdown_armed = !s_button_pressed;
+    s_press_start = 0;
+    if (s_wait_release_after_startup) {
+        ESP_LOGI(kTag, "startup button still held, waiting for release before arming shutdown");
+    }
 
     s_evt_queue = xQueueCreate(8, sizeof(encoder_event_t));
     if (s_evt_queue == nullptr) {

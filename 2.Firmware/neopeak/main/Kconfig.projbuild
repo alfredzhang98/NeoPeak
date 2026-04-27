@@ -75,9 +75,25 @@ menu "NeoBoard"
 
         config SCREEN_BUFFER_SIZE
             int "LCD buffer size"
-            default 28800
+            default 9600
             help
-                Buffer size in pixels (HOR_RES * VER_RES / 2). Default for 240x240 is 28800.
+                Buffer size in pixels. Default is 240x40 lines for a 240x240 screen.
+
+        config SCREEN_SPI_HZ
+            int "LCD SPI clock (Hz)"
+            default 40000000
+
+        config SCREEN_X_GAP
+            int "LCD X gap"
+            default 0
+
+        config SCREEN_Y_GAP
+            int "LCD Y gap"
+            default 0
+
+        config SCREEN_INVERT_COLOR
+            bool "LCD invert color"
+            default y
     endmenu
 
     menu "Battery"
@@ -128,21 +144,14 @@ menu "NeoBoard"
             hex "IMU I2C address"
             default 0x68
 
-        config IMU_I2C_TOOL
-            bool "Run IMU I2C probe tool at boot"
-            default n
-            help
-                Enable a standalone I2C probe and WHO_AM_I read at boot.
-
-        config IMU_I2C_TOOL_ONLY
-            bool "Only run IMU I2C tool (skip app init)"
-            default y
-            depends on IMU_I2C_TOOL
-
-        config IMU_I2C_TOOL_HZ
-            int "IMU I2C tool clock (Hz)"
+        config IMU_I2C_HZ
+            int "IMU I2C clock (Hz)"
             default 400000
-            depends on IMU_I2C_TOOL
+
+        config IMU_SAMPLE_PERIOD_MS
+            int "IMU sample period (ms)"
+            default 100
+
     endmenu
 
     menu "External FPC 6-Pin"

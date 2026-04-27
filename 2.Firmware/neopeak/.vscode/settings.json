@@ -4,7 +4,7 @@
     "interface/ftdi/esp32_devkitj_v1.cfg",
     "target/esp32.cfg"
   ],
-  "idf.currentSetup": "/Users/alfred/.espressif/v6.0/esp-idf",
+  "idf.currentSetup": "D:\\SDKs\\.espressif\\v6.0\\esp-idf",
   "idf.customExtraVars": {
     "OPENOCD_SCRIPTS": "C:\\Users\\uceeqz4\\.espressif\\tools\\openocd-esp32\\v0.10.0-esp32-20190708/openocd-esp32/share/openocd/scripts",
     "IDF_TARGET": "esp32"
@@ -15,7 +15,7 @@
     "--query-driver=C:\\Espressif\\tools\\xtensa-esp-elf\\esp-14.2.0_20251107\\xtensa-esp-elf\\bin\\xtensa-esp32-elf-gcc.exe",
     "--compile-commands-dir=c:\\Users\\alfred\\Desktop\\Peak-main\\2.Firmware\\neopeak_idf\\build"
   ],
-  "idf.portWin": "COM8",
+  "idf.portWin": "COM3",
   "idf.flashType": "UART",
   "idf.port": "/dev/tty.usbserial-0001"
 }

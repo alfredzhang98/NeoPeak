@@ -16,4 +16,5 @@ typedef struct {
 
 void buzzer_init(const buzzer_config_t *cfg);
 void buzzer_set_enable(bool en);
+void buzzer_set_volume_percent(uint8_t percent);
 void buzzer_tone(uint32_t freq_hz, int32_t duration_ms);

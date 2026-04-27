@@ -35,6 +35,7 @@ typedef struct {
  * @return 启动结果
  */
 esp_err_t encoder_service_start(const encoder_service_config_t *cfg);
+bool encoder_service_is_button_pressed(void);
 
 #ifdef __cplusplus
 }

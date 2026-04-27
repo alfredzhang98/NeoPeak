@@ -8,7 +8,7 @@ esp_err_t hal_pwm_timer_init(const hal_pwm_timer_cfg_t *cfg)
         return ESP_ERR_INVALID_ARG;
     }
 
-    // PWM 定时器配置
+    // PWM timer configuration.
     ledc_timer_config_t timer_cfg = {
         .speed_mode = cfg->speed_mode,
         .duty_resolution = cfg->duty_resolution,
@@ -26,7 +26,7 @@ esp_err_t hal_pwm_channel_init(const hal_pwm_channel_cfg_t *cfg)
         return ESP_ERR_INVALID_ARG;
     }
 
-    // PWM 通道配置
+    // PWM channel configuration.
     // intr_type is deprecated in ESP-IDF v6.0 but still required to satisfy
     // -Werror=missing-field-initializers; suppress the deprecation warning locally.
 #pragma GCC diagnostic push

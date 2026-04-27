@@ -8,7 +8,7 @@ extern "C" {
 #endif
 
 // ---------------------------------------------------------------------------
-// Music IDs — values match MusicId enum in tone_music.h
+// Music IDs. Values match MusicId enum in tone_music.h.
 // ---------------------------------------------------------------------------
 typedef enum {
     FEEDBACK_MUSIC_NONE          = 0xFF,
@@ -36,7 +36,7 @@ typedef enum {
 } feedback_haptic_t;
 
 // ---------------------------------------------------------------------------
-// Feedback request — published to MSG_TOPIC_FEEDBACK
+// Feedback request published to MSG_TOPIC_FEEDBACK.
 // ---------------------------------------------------------------------------
 typedef struct {
     feedback_music_t  music;
@@ -64,6 +64,9 @@ void feedback_post(feedback_music_t music, feedback_haptic_t haptic);
  * Use only for critical sequences like shutdown where timing matters.
  */
 void feedback_post_blocking(feedback_music_t music, feedback_haptic_t haptic);
+
+void feedback_service_set_volume_percent(uint8_t percent);
+void feedback_service_set_haptic_percent(uint8_t percent);
 
 #ifdef __cplusplus
 }
