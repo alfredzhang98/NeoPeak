@@ -10,7 +10,8 @@ constexpr uint32_t kDoubleClickMs = 320;
 constexpr int kPageW = 240;
 constexpr int kPageH = 240;
 constexpr int kHomeItemCount = 3;
-constexpr int kSettingsItemCount = 3;
+constexpr int kSettingsItemCount = 4;
+constexpr int kSettingsYawIndex = 3;
 constexpr int kSettingsBackIndex = kSettingsItemCount;
 constexpr int kSettingsSelectableCount = kSettingsItemCount + 1;
 
@@ -211,6 +212,18 @@ void select_home(int index)
 
 void update_setting_row(int index)
 {
+    if (index == kSettingsYawIndex) {
+        const bool on = s_app.settings.yaw_enabled;
+        if (s_app.settings_value[index] != nullptr) {
+            lv_label_set_text(s_app.settings_value[index], on ? "ON" : "OFF");
+        }
+        if (s_app.settings_fill[index] != nullptr) {
+            constexpr int track_w = 140;
+            lv_obj_set_width(s_app.settings_fill[index], on ? track_w : 0);
+        }
+        return;
+    }
+
     int value = 0;
     switch (index) {
     case 0: value = s_app.settings.backlight_percent; break;
@@ -295,9 +308,9 @@ void build_settings(lv_obj_t *page)
 {
     make_status_bar(page, "SETTINGS", 2);
 
-    const char *names[kSettingsItemCount] = {"BACKLIGHT", "VOLUME", "HAPTIC"};
-    constexpr int row_top = 52;
-    constexpr int row_h = 50;
+    const char *names[kSettingsItemCount] = {"BACKLIGHT", "VOLUME", "HAPTIC", "YAW"};
+    constexpr int row_top = 42;
+    constexpr int row_h = 40;
     constexpr int track_w = 140;
 
     for (int i = 0; i < kSettingsItemCount; ++i) {
@@ -353,6 +366,10 @@ void build_info(lv_obj_t *page)
 void build_imu(lv_obj_t *page)
 {
     imu_cube_ui_create(page);
+    // imu_cube_ui_create() resets internal state including yaw_enabled to its
+    // default (true). Re-apply the user's persistent setting so toggling
+    // YAW off in Settings survives leaving and re-entering the IMU page.
+    imu_cube_ui_set_yaw_enabled(s_app.settings.yaw_enabled);
     s_app.back_hint = make_text(page, LV_SYMBOL_LEFT "  BACK", 14, 216,
                                 &lv_font_montserrat_12, kColDim);
 }
@@ -449,6 +466,16 @@ void handle_single_click()
 
 void adjust_setting(int delta)
 {
+    if (s_app.settings_selected == kSettingsYawIndex) {
+        // Toggle ON/OFF on any rotation tick.
+        if (delta != 0) {
+            s_app.settings.yaw_enabled = !s_app.settings.yaw_enabled;
+            update_setting_row(kSettingsYawIndex);
+            notify_settings();
+        }
+        return;
+    }
+
     uint8_t *target = nullptr;
     switch (s_app.settings_selected) {
     case 0: target = &s_app.settings.backlight_percent; break;
@@ -483,6 +510,7 @@ void ui_app_create(lv_obj_t *root, const ui_app_config_t *cfg)
     s_app.settings.backlight_percent = 15;
     s_app.settings.volume_percent = 30;
     s_app.settings.haptic_percent = 0;
+    s_app.settings.yaw_enabled = true;
     if (cfg != nullptr) {
         s_app.cfg = *cfg;
     }

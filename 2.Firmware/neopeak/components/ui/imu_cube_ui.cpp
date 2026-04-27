@@ -69,6 +69,7 @@ struct ImuCubeUi {
     uint8_t last_calib_percent;
     float last_q[4];
     float offset_inv_q[4];
+    bool yaw_enabled;
 };
 
 ImuCubeUi s_ui = {};
@@ -109,6 +110,30 @@ static inline void quat_mul(const float a[4], const float b[4], float out[4])
     out[1] = a[0] * b[1] + a[1] * b[0] + a[2] * b[3] - a[3] * b[2];
     out[2] = a[0] * b[2] - a[1] * b[3] + a[2] * b[0] + a[3] * b[1];
     out[3] = a[0] * b[3] + a[1] * b[2] - a[2] * b[1] + a[3] * b[0];
+}
+
+// Swing-twist decomposition around the Z axis: strip the yaw component from a
+// quaternion and return only the residual roll/pitch rotation. Useful when
+// the user disables yaw display — gyro-integrated yaw drifts forever without
+// a magnetometer, so locking it to the calibration "forward" pose is the
+// honest thing to do for a 6-axis IMU.
+static inline void quat_strip_yaw(const float q[4], float out[4])
+{
+    const float w = q[0], z = q[3];
+    const float twist_norm_sq = w * w + z * z;
+    if (twist_norm_sq < 1e-9f) {
+        // Pure 180-degree swing (e.g., flipped face-down). No yaw to strip.
+        out[0] = q[0]; out[1] = q[1]; out[2] = q[2]; out[3] = q[3];
+        return;
+    }
+    const float inv = 1.0f / sqrtf(twist_norm_sq);
+    const float tw = w * inv;
+    const float tz = z * inv;
+    const float twist[4] = {tw, 0.0f, 0.0f, tz};
+    const float twist_inv[4] = {tw, 0.0f, 0.0f, -tz};
+    // swing = q * conj(twist).
+    quat_mul(q, twist_inv, out);
+    (void)twist;
 }
 
 // Rotate vector v by unit quaternion q: v' = q * (0, v) * conj(q).
@@ -315,6 +340,7 @@ void imu_cube_ui_create(lv_obj_t *root)
     s_ui.offset_inv_q[0] = 1.0f;
     s_ui.state = State::kCalibrating;
     s_ui.last_calib_percent = 0;
+    s_ui.yaw_enabled = true;
 
     lv_obj_set_style_radius(root, 0, 0);
     lv_obj_set_style_bg_color(root, c(kColBg), 0);
@@ -427,7 +453,13 @@ void imu_cube_ui_update(const float q[4], uint8_t calib_percent,
     // kRunning — drive the cube.
     float q_rel[4];
     quat_mul(s_ui.offset_inv_q, qin, q_rel);
-    update_cube(q_rel);
+    if (!s_ui.yaw_enabled) {
+        float q_no_yaw[4];
+        quat_strip_yaw(q_rel, q_no_yaw);
+        update_cube(q_no_yaw);
+    } else {
+        update_cube(q_rel);
+    }
     update_data(qin);
 }
 
@@ -473,4 +505,9 @@ bool imu_cube_ui_consume_click(void)
     update_cube(kIdentityQ);
     update_data(s_ui.last_q);
     return true;
+}
+
+void imu_cube_ui_set_yaw_enabled(bool enabled)
+{
+    s_ui.yaw_enabled = enabled;
 }

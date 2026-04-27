@@ -16,6 +16,7 @@
 #include "hal_pwm.h"
 #include "imu_service.h"
 #include "message_bus.h"
+#include "imu_cube_ui.h"
 #include "ui_app.h"
 
 namespace {
@@ -231,6 +232,7 @@ void on_ui_settings_changed(const ui_app_settings_t *settings, void *user_ctx)
     apply_backlight_percent(settings->backlight_percent);
     feedback_service_set_volume_percent(settings->volume_percent);
     feedback_service_set_haptic_percent(settings->haptic_percent);
+    imu_cube_ui_set_yaw_enabled(settings->yaw_enabled);
 }
 
 void on_ui_imu_active_changed(bool active, void *user_ctx)

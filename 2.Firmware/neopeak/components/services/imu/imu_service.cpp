@@ -18,13 +18,21 @@ constexpr uint32_t kDefaultSampleMs = 10;
 constexpr float kPi = 3.1415926535f;
 constexpr float kDegToRad = 0.0174532925f;
 
-// Madgwick filter gain. Larger = trust accel more (faster convergence, more
-// jitter from accel noise). 0.04 is the paper's default; ICM-42688-P has very
-// low gyro noise so we can drop to 0.015 — gyro carries the high-frequency
-// motion, accel only needs to gently hold long-term gravity reference.
-// Initial pose is seeded from accel mean during boot so we don't need a high
-// beta for fast convergence.
-constexpr float kMadgwickBeta = 0.015f;
+// Madgwick gain (proportional / non-normalized form). The gradient is fed to
+// the filter without the unit-norm step, so the correction magnitude scales
+// with attitude error: large error → large pull, near truth → near zero.
+// This eliminates the noise-amplification "tremor" that the original
+// normalized form has at low error, and gives exponential — not linear —
+// convergence after fast motion stops.
+//
+// kBetaProp ≈ 1 / time_constant. 2.0 → tau ~0.5 s (90% recovery in ~1.15 s).
+// Raise toward 3.0 for snappier recovery if visible drift remains.
+constexpr float kBetaProp = 2.0f;
+
+// Soft accel low-pass on top of the chip's UI filter — drops the noise floor
+// fed into Madgwick by ~6 dB, suppressing residual tremor.
+// kAccelSoftAlpha = 0.5 → tau ≈ 14 ms at 100 Hz, imperceptible tracking lag.
+constexpr float kAccelSoftAlpha = 0.5f;
 
 // Gyro bias calibration: average N consecutive stationary samples after the
 // sensor powers up to subtract per-unit DC offset. ~0.6 s at 100 Hz once the
@@ -75,6 +83,7 @@ float s_bias_accum[3] = {0.0f, 0.0f, 0.0f};
 float s_accel_accum[3] = {0.0f, 0.0f, 0.0f};
 int s_bias_samples = 0;
 bool s_bias_ready = false;
+float s_accel_filt[3] = {0.0f, 0.0f, 1.0f};  // soft-LPF accel state
 
 TickType_t delay_ticks(uint32_t ms)
 {
@@ -99,6 +108,9 @@ void reset_filter_state()
     s_accel_accum[0] = s_accel_accum[1] = s_accel_accum[2] = 0.0f;
     s_bias_samples = 0;
     s_bias_ready = false;
+    s_accel_filt[0] = 0.0f;
+    s_accel_filt[1] = 0.0f;
+    s_accel_filt[2] = 1.0f;
 }
 
 // Compute the quaternion that rotates the body so that its measured
@@ -163,10 +175,15 @@ void madgwick_step(float gx, float gy, float gz,
     float qd2 = 0.5f * ( q0 * gy - q1 * gz + q3 * gx);
     float qd3 = 0.5f * ( q0 * gz + q1 * gy - q2 * gx);
 
-    // Apply accel correction only when reading is non-zero (avoid free-fall
-    // singularity).
+    // Only trust the accelerometer as a "gravity reference" when its
+    // magnitude is close to 1 g. Outside that band we are seeing significant
+    // linear acceleration (arm swing, tap, vibration) and Madgwick would
+    // mistake it for a new gravity direction, dragging roll/pitch off truth.
+    // While outside the band we keep integrating gyro only.
     float anorm_sq = ax * ax + ay * ay + az * az;
-    if (anorm_sq > 1e-9f) {
+    constexpr float kAccelLowSq  = 0.65f * 0.65f;   // ~0.65 g
+    constexpr float kAccelHighSq = 1.35f * 1.35f;   // ~1.35 g
+    if (anorm_sq > kAccelLowSq && anorm_sq < kAccelHighSq) {
         float inv = 1.0f / sqrtf(anorm_sq);
         ax *= inv; ay *= inv; az *= inv;
 
@@ -180,14 +197,13 @@ void madgwick_step(float gx, float gy, float gz,
         float s2 = -2.0f * q0 * f1 + 2.0f * q3 * f2 - 4.0f * q2 * f3;
         float s3 =  2.0f * q1 * f1 + 2.0f * q2 * f2;
 
-        float snorm_sq = s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3;
-        if (snorm_sq > 1e-9f) {
-            float inv_s = 1.0f / sqrtf(snorm_sq);
-            qd0 -= kMadgwickBeta * s0 * inv_s;
-            qd1 -= kMadgwickBeta * s1 * inv_s;
-            qd2 -= kMadgwickBeta * s2 * inv_s;
-            qd3 -= kMadgwickBeta * s3 * inv_s;
-        }
+        // Proportional (non-normalized) form: correction magnitude scales
+        // with attitude error. Big error → big pull (fast recovery), near
+        // truth → tiny correction (no noise-driven tremor at rest).
+        qd0 -= kBetaProp * s0;
+        qd1 -= kBetaProp * s1;
+        qd2 -= kBetaProp * s2;
+        qd3 -= kBetaProp * s3;
     }
 
     q0 += qd0 * dt;
@@ -328,7 +344,13 @@ void update_attitude(imu_sample_t *sample)
     float gy = g_raw[1] - s_gyro_bias[1];
     float gz = g_raw[2] - s_gyro_bias[2];
 
-    madgwick_step(gx, gy, gz, a[0], a[1], a[2], dt);
+    // Soft accel LPF on top of the chip's UI filter — drops the noise floor
+    // fed into Madgwick by ~6 dB. tau ≈ 14 ms at 100 Hz, imperceptible lag.
+    s_accel_filt[0] = kAccelSoftAlpha * s_accel_filt[0] + (1.0f - kAccelSoftAlpha) * a[0];
+    s_accel_filt[1] = kAccelSoftAlpha * s_accel_filt[1] + (1.0f - kAccelSoftAlpha) * a[1];
+    s_accel_filt[2] = kAccelSoftAlpha * s_accel_filt[2] + (1.0f - kAccelSoftAlpha) * a[2];
+
+    madgwick_step(gx, gy, gz, s_accel_filt[0], s_accel_filt[1], s_accel_filt[2], dt);
 
     sample->attitude.q[0] = s_q[0];
     sample->attitude.q[1] = s_q[1];

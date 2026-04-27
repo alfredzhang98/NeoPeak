@@ -25,6 +25,11 @@ void imu_cube_ui_reset(void);
 // propagates to the regular cube-page logic (reset cube / pop page).
 bool imu_cube_ui_consume_click(void);
 
+// When false, the cube ignores yaw — only roll and pitch animate the model
+// while yaw stays locked to the calibration "forward" direction. Useful for
+// hardware without a magnetometer where free-running yaw drifts over time.
+void imu_cube_ui_set_yaw_enabled(bool enabled);
+
 #ifdef __cplusplus
 }
 #endif

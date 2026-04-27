@@ -13,6 +13,7 @@ typedef struct {
     uint8_t backlight_percent;
     uint8_t volume_percent;
     uint8_t haptic_percent;
+    bool    yaw_enabled;       // when false, IMU cube ignores yaw (locks forward)
 } ui_app_settings_t;
 
 typedef void (*ui_app_settings_changed_cb_t)(const ui_app_settings_t *settings, void *user_ctx);
